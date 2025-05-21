@@ -19,17 +19,17 @@ from PIL import Image
 
 import io
 
-#creates the page
+# configures the page for UI
 st.set_page_config(page_title="Clothing Finder App", layout="centered")
 
-#title
+# title
 st.title("Clothing Finder App")
 
-#upload screen
-
+# creates upload image screen
 query = "Riya_learning copy/query images/pantQuery.png"
 query1 = st.file_uploader(label="Upload your clothing image!", accept_multiple_files=False, type=['png', 'jpeg', 'jpg'])
 
+# if the user uploads an image, display it
 if query1 is not None:
     query = query1
     query_display = Image.open(query)
@@ -38,15 +38,12 @@ if query1 is not None:
     with col2:
         st.write(query_display, use_container_width=True)
 
-
-
-
-    # Understanding the VGG16 Model
+    # creating the VGG16 Model
+    # include_top is false since you don't want to include the top layer, which classifies the object (not necessary for image similarity)
+    # the input shape is (height, width, #of channels)
     model = VGG16(weights = 'imagenet', input_shape = ((224, 224, 3)), pooling = 'max', include_top = False)
-    #model.summary()
-    # include_top is false since you don't want to include the top layer, which classifies the object which is not needed for image similarity
-    # the output shape (batch size, height, width, # of channels)
 
+    #creating a class with the variables & functions for extracting a feature vector
     class VGGNet:
         def __init__(self):
             self.input_shape = (224, 224, 3)
@@ -88,37 +85,42 @@ if query1 is not None:
             # normalizing the vector by dividing the actual vector by the length/magnitude of vector to get the "unit" vector of length 1
             # doing this so you can fairly compare feature vectors using cosine similarity later
             norm_feat = feat[0]/LA.norm(feat[0])
-            
             return norm_feat
         
 
     model = VGGNet()
 
+    # reading the clothing database csv file
     clothing_database = pd.read_csv("clothing_database.csv")
 
-
+    # if the h5 file doesn't already exist (basically if it was created on a previous run already), then create the file
     if not os.path.exists("CNNFeatures.h5"):
+
+        # initializes list of features & image names
         feats = []
         names = []
 
         for i, row in clothing_database.iterrows():
+            # for each image in the database, add the image name to the names list
             img_name = str(row["image name"]) + ".png"
             img_path = os.path.join("all images", img_name)
 
             # making sure file exists
             if os.path.exists(img_path):
                 print("Extracting features from: ", img_name)
+                # for each image in the database, create & add the feature vector to the features list
                 X = model.extract_feat(img_path)
                 feats.append(X)
                 names.append(img_name)
 
+        # turn feature list into an array
         feats = np.array(feats)
 
+        # initialize the h5 file
         output = "CNNFeatures.h5"
-
         print(" writing feature extraction results to h5 file")
 
-    # writing them to hard drive (disk)
+        # writing the features to the h5 file
         h5f = h5py.File(output, 'w')
         h5f.create_dataset('dataset_1', data = feats)
         h5f.create_dataset('dataset_2', data = np.bytes_(names))
@@ -129,11 +131,11 @@ if query1 is not None:
 
     with h5py.File("CNNFeatures.h5", 'r') as h5f:
 
-        # override feats into a new NumPy array containing same data as before but being read from the file
+        # override features into a new NumPy array containing same data as before but being read from the file
         feats = h5f['dataset_1'][:]
         imgNames = h5f['dataset_2'][:]
 
-    # creating feature vecture for query image
+    # creating feature vector for query image
     queryImg = query
     query_feat = model.extract_feat(queryImg)
 
@@ -144,18 +146,19 @@ if query1 is not None:
     scores = [1 - distance.cosine(query_feat, feat) for feat in feats]
     scores = np.array(scores)
 
-    #np.argsort(scores) returns the indices that would sort an array
+    # np.argsort(scores) returns the indices that would sort an array
     # [:: -1] reverse so in descending order
     rank_ID = np.argsort(scores)[:: -1]
 
     # creates new array in the order of the indices given by the rank_ID array (already sorted from most similar to  least)
     rank_score = scores[rank_ID]
 
-    # Get top 3 matches
+    # Get top_n matches
     top_n = 3
     top_matches = rank_ID[: top_n]
     top_scores = rank_score[:top_n]
 
+    # display top matches on the web page
     st.markdown(f"## Your top {top_n} matches!")
     for i, (image_id, score) in enumerate(zip(top_matches, top_scores)):
         # safety check to make sure filenames are stored correctly
@@ -163,8 +166,10 @@ if query1 is not None:
         brand = clothing_database.iloc[image_id]["brand"]
         link = clothing_database.iloc[image_id]["link"]
 
+        # create two columns to display image in the left column & text in the right column
         col1, col2 = st.columns([1, 2])
 
+        # print image based on width of left column
         with col1:
             image_path = os.path.join("all images", image_name)
             st.image(Image.open(image_path), use_container_width=True)
