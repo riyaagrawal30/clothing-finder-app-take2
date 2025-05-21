@@ -33,7 +33,10 @@ query1 = st.file_uploader(label="Upload your clothing image!", accept_multiple_f
 if query1 is not None:
     query = query1
     query_display = Image.open(query)
-    st.write(query_display)
+    st.markdown("## Your image:")
+    col1, col2, col3 = st.columns([1, 1, 1])
+    with col2:
+        st.write(query_display, use_container_width=True)
 
 
 
@@ -153,17 +156,20 @@ if query1 is not None:
     top_matches = rank_ID[: top_n]
     top_scores = rank_score[:top_n]
 
-    print(f"Top {top_n} matches with similarity scores:")
+    st.markdown(f"## Your top {top_n} matches!")
     for i, (image_id, score) in enumerate(zip(top_matches, top_scores)):
         # safety check to make sure filenames are stored correctly
         image_name = imgNames[image_id].decode('utf-8') if isinstance(imgNames[image_id], bytes) else imgNames[image_id]
         brand = clothing_database.iloc[image_id]["brand"]
         link = clothing_database.iloc[image_id]["link"]
 
-        print(image_id, image_name)
-        print(clothing_database.iloc[image_id]["image name"])
-        print(clothing_database.iloc[image_id]["link"])
-        st.write(Image.open(os.path.join("all images", image_name)))
-        st.write(f"{i+1}. Similarity Score: {score: .4f}")
-        st.write(f" Brand: {brand}")
-        st.write(f" Link: {link}")
+        col1, col2 = st.columns([1, 2])
+
+        with col1:
+            image_path = os.path.join("all images", image_name)
+            st.image(Image.open(image_path), use_container_width=True)
+
+        with col2:    
+            st.markdown(f"{i+1}. Similarity Score: {score: .4f}")
+            st.markdown(f" Brand: {brand}")
+            st.markdown(f" Link: {link}")
