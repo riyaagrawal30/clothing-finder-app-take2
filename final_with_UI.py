@@ -17,7 +17,7 @@ import pandas as pd
 import streamlit as st
 from PIL import Image
 
-import io
+import time
 
 # configures the page for UI
 st.set_page_config(page_title="Clothing Finder App", layout="centered")
@@ -30,6 +30,11 @@ query = st.file_uploader(label="Upload your clothing image!", accept_multiple_fi
 
 # if the user uploads an image, display it
 if query is not None:
+
+    # loading text and spinner widget animation
+    with st.spinner("Loading... "):
+        time.sleep(3)
+        
     query_display = Image.open(query)
     st.markdown("## Your image:")
     col1, col2, col3 = st.columns([1, 1, 1])
