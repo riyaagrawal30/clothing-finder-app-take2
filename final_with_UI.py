@@ -26,17 +26,17 @@ st.set_page_config(page_title="Clothing Finder App", layout="centered")
 st.title("Clothing Finder App")
 
 # creates upload image screen
-query = "Riya_learning copy/query images/pantQuery.png"
-query1 = st.file_uploader(label="Upload your clothing image!", accept_multiple_files=False, type=['png', 'jpeg', 'jpg'])
+query = st.file_uploader(label="Upload your clothing image!", accept_multiple_files=False, type=['png', 'jpeg', 'jpg'])
 
 # if the user uploads an image, display it
-if query1 is not None:
-    query = query1
+if query is not None:
     query_display = Image.open(query)
     st.markdown("## Your image:")
     col1, col2, col3 = st.columns([1, 1, 1])
     with col2:
         st.write(query_display, use_container_width=True)
+
+
 
     # creating the VGG16 Model
     # include_top is false since you don't want to include the top layer, which classifies the object (not necessary for image similarity)
@@ -88,6 +88,7 @@ if query1 is not None:
             return norm_feat
         
 
+    # creating an instance of the class
     model = VGGNet()
 
     # reading the clothing database csv file
@@ -102,6 +103,7 @@ if query1 is not None:
 
         for i, row in clothing_database.iterrows():
             # for each image in the database, add the image name to the names list
+
             img_name = str(row["image name"]) + ".png"
             img_path = os.path.join("all images", img_name)
 
@@ -163,6 +165,8 @@ if query1 is not None:
     for i, (image_id, score) in enumerate(zip(top_matches, top_scores)):
         # safety check to make sure filenames are stored correctly
         image_name = imgNames[image_id].decode('utf-8') if isinstance(imgNames[image_id], bytes) else imgNames[image_id]
+
+        # storing the brand and link from the csv with the respective id
         brand = clothing_database.iloc[image_id]["brand"]
         link = clothing_database.iloc[image_id]["link"]
 
